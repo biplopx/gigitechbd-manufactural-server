@@ -10,7 +10,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
+// Verify Token
+function VerifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: 'UnAuthorized access' });
+  }
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: 'Forbidden access' })
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pdxgw.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -35,7 +49,8 @@ async function run() {
         $set: user,
       };
       const result = await usersCollection.updateOne(filter, updateDoc, options);
-      res.send(result)
+      const token = jwt.sign({ email: email }, process.env.ACESS_TOKEN_SECRET, { expiresIn: '48h' })
+      res.send({ result, token })
     })
 
     /* All prouct api */
@@ -59,6 +74,13 @@ async function run() {
       const order = req.body;
       const result = await ordersCollection.insertOne(order);
       res.send(result);
+    })
+
+    // Get order api
+    app.get('/myorders/:email', async (req, res) => {
+      const query = { email: req.params.email };
+      const orders = await ordersCollection.find(query).toArray();
+      return res.send(orders);
     })
 
 
