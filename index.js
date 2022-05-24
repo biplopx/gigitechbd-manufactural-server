@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // Verify Token
-function VerifyJWT(req, res, next) {
+function verifyJWT(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).send({ message: 'UnAuthorized access' });
@@ -49,6 +49,7 @@ async function run() {
         $set: user,
       };
       const result = await usersCollection.updateOne(filter, updateDoc, options);
+      // sign a token in user
       const token = jwt.sign({ email: email }, process.env.ACESS_TOKEN_SECRET, { expiresIn: '48h' })
       res.send({ result, token })
     })
@@ -77,7 +78,20 @@ async function run() {
     })
 
     // Get order api
-    app.get('/myorders/:email', async (req, res) => {
+    // app.get('/myorders/:email', verifyJWT, async (req, res) => {
+    //   const query = { email: req.params.email };
+    //   const decodedEmail = req.decoded.email;
+    //   console.log(decodedEmail)
+    //   if (query === decodedEmail) {
+    //     const orders = await ordersCollection.find(query).toArray();
+    //     return res.send(orders);
+    //   }
+    //   else {
+    //     return res.status(403).send({ message: 'forbidden access' })
+    //   }
+    // })
+
+    app.get('/myorders/:email', verifyJWT, async (req, res) => {
       const query = { email: req.params.email };
       const orders = await ordersCollection.find(query).toArray();
       return res.send(orders);
