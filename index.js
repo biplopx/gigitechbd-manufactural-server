@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -21,6 +22,21 @@ async function run() {
     console.log('DB Connected')
     // dabase name collection
     const productsCollection = client.db('gigitechbd').collection('products');
+    const ordersCollection = client.db('gigitechbd').collection('oders');
+    const usersCollection = client.db('gigitechbd').collection('users');
+
+    // user creation
+    app.put('/user/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result)
+    })
 
     /* All prouct api */
     app.get('/products', async (req, res) => {
@@ -38,6 +54,12 @@ async function run() {
       res.send(product);
     })
 
+    // Order API
+    app.post('/order', async (req, res) => {
+      const order = req.body;
+      const result = await ordersCollection.insertOne(order);
+      res.send(result);
+    })
 
 
   }
