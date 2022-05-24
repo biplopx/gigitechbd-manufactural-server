@@ -91,12 +91,23 @@ async function run() {
 
     /*==== End User Related APIs==== */
 
+
+    /*==== Start Product Related APIs ====*/
+
     /* All prouct api */
     app.get('/products', async (req, res) => {
       const query = {};
       const cursor = productsCollection.find(query);
       const products = await cursor.toArray();
       res.send(products);
+    })
+
+    // Add Product api
+    app.post('/product/add', async (req, res) => {
+      const product = req.body;
+      console.log(product)
+      const result = await productsCollection.insertOne(product)
+      res.send(result);
     })
 
     // Product Details api
@@ -120,6 +131,8 @@ async function run() {
       const orders = await ordersCollection.find(query).toArray();
       return res.send(orders);
     })
+
+    /*==== End Product Related APIs ====*/
 
 
   }
