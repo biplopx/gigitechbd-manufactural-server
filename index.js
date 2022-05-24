@@ -39,6 +39,9 @@ async function run() {
     const ordersCollection = client.db('gigitechbd').collection('oders');
     const usersCollection = client.db('gigitechbd').collection('users');
 
+
+    /*==== Start User Related APIs ====*/
+
     // user creation
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
@@ -50,9 +53,36 @@ async function run() {
       };
       const result = await usersCollection.updateOne(filter, updateDoc, options);
       // sign a token in user
-      const token = jwt.sign({ email: email }, process.env.ACESS_TOKEN_SECRET, { expiresIn: '48h' })
+      const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '48h' })
       res.send({ result, token })
     })
+
+    // Make admin user api
+    app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const requester = req.decoded.email;
+      const requesterAccount = await usersCollection.findOne({ email: requester });
+      if (requesterAccount.role === 'admin') {
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { role: 'admin' },
+        };
+        const result = await usersCollection.updateOne(filter, updateDoc);
+        res.send(result)
+      }
+      else {
+        res.status(403).send({ message: 'forbidden' })
+      }
+
+    })
+
+    // all users api
+    app.get('/users', verifyJWT, async (req, res) => {
+      const users = await usersCollection.find().toArray();
+      res.send(users);
+    })
+
+    /*==== End User Related APIs==== */
 
     /* All prouct api */
     app.get('/products', async (req, res) => {
@@ -77,20 +107,7 @@ async function run() {
       res.send(result);
     })
 
-    // Get order api
-    // app.get('/myorders/:email', verifyJWT, async (req, res) => {
-    //   const query = { email: req.params.email };
-    //   const decodedEmail = req.decoded.email;
-    //   console.log(decodedEmail)
-    //   if (query === decodedEmail) {
-    //     const orders = await ordersCollection.find(query).toArray();
-    //     return res.send(orders);
-    //   }
-    //   else {
-    //     return res.status(403).send({ message: 'forbidden access' })
-    //   }
-    // })
-
+    // my orders api
     app.get('/myorders/:email', verifyJWT, async (req, res) => {
       const query = { email: req.params.email };
       const orders = await ordersCollection.find(query).toArray();
