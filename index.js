@@ -38,6 +38,7 @@ async function run() {
     const productsCollection = client.db('gigitechbd').collection('products');
     const ordersCollection = client.db('gigitechbd').collection('oders');
     const usersCollection = client.db('gigitechbd').collection('users');
+    const reviewsCollection = client.db('gigitechbd').collection('reviews');
 
 
     /*==== Start User Related APIs ====*/
@@ -133,6 +134,24 @@ async function run() {
     })
 
     /*==== End Product Related APIs ====*/
+
+
+    /*==== Start Reviews Related APIs ====*/
+    // Add Review API
+    app.post('/review/add', verifyJWT, async (req, res) => {
+      const review = req.body;
+      const result = await reviewsCollection.insertOne(review)
+      res.send(result);
+    })
+
+    // Get Review API
+    app.get('/reviews', async (req, res) => {
+      const query = {};
+      const cursor = reviewsCollection.find(query);
+      const reviews = await cursor.toArray();
+      res.send(reviews);
+    })
+    /*==== End Reviews Related APIs ====*/
 
 
   }
