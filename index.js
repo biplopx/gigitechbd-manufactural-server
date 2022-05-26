@@ -26,6 +26,19 @@ function verifyJWT(req, res, next) {
   });
 }
 
+// verify admin
+const verifyAdmin = async (req, res, next) => {
+  const requester = req.decoded.email;
+  console.log(requester)
+  const requesterAccount = await usersCollection.findOne({ email: requester });
+  if (requesterAccount.role === 'admin') {
+    next();
+  }
+  else {
+    res.status(403).send({ message: 'forbidden access' });
+  }
+}
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pdxgw.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -36,7 +49,7 @@ async function run() {
     console.log('DB Connected')
     // dabase name collection
     const productsCollection = client.db('gigitechbd').collection('products');
-    const ordersCollection = client.db('gigitechbd').collection('oders');
+    const ordersCollection = client.db('gigitechbd').collection('orders');
     const usersCollection = client.db('gigitechbd').collection('users');
     const reviewsCollection = client.db('gigitechbd').collection('reviews');
 
@@ -61,19 +74,12 @@ async function run() {
     // Make admin user api
     app.put('/user/admin/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
-      const requester = req.decoded.email;
-      const requesterAccount = await usersCollection.findOne({ email: requester });
-      if (requesterAccount.role === 'admin') {
-        const filter = { email: email };
-        const updateDoc = {
-          $set: { role: 'admin' },
-        };
-        const result = await usersCollection.updateOne(filter, updateDoc);
-        res.send(result)
-      }
-      else {
-        res.status(403).send({ message: 'forbidden' })
-      }
+      const filter = { email: email };
+      const updateDoc = {
+        $set: { role: 'admin' },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result)
     })
 
     // check admin or not api
@@ -104,7 +110,7 @@ async function run() {
     })
 
     // Add Product api
-    app.post('/product/add', async (req, res) => {
+    app.post('/product/add', verifyJWT, async (req, res) => {
       const product = req.body;
       console.log(product)
       const result = await productsCollection.insertOne(product)
@@ -119,6 +125,23 @@ async function run() {
       res.send(product);
     })
 
+    // After place order update availabe quantity update
+    app.put('/product/:id', async (req, res) => {
+      const productId = req.body.productId;
+      const reduceQuantity = req.body.quantity;
+      const query = { _id: ObjectId(productId) };
+      const product = await productsCollection.findOne(query);
+      const updateQuantity = await productsCollection.updateOne(
+        { _id: ObjectId(productId) },
+        {
+          $set: {
+            "availableQuantity": (parseInt(product.availableQuantity) - parseInt(reduceQuantity))
+          }
+        }
+      );
+      res.send(updateQuantity);
+    })
+
     // Order API
     app.post('/order', async (req, res) => {
       const order = req.body;
@@ -126,12 +149,22 @@ async function run() {
       res.send(result);
     })
 
+
     // my orders api
     app.get('/myorders/:email', verifyJWT, async (req, res) => {
       const query = { email: req.params.email };
       const orders = await ordersCollection.find(query).toArray();
       return res.send(orders);
     })
+
+    // Get single order information
+    // app.get('/order/:id', async (req, res,) => {
+    //   const id = req.params.id;
+    //   console.log(id)
+    //   const query = { _id: ObjectId(id.trim()) };
+    //   const order = await ordersCollection.findOne(query);
+    //   res.send(order);
+    // })
 
     /*==== End Product Related APIs ====*/
 
