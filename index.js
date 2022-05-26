@@ -84,7 +84,7 @@ async function run() {
         $set: user,
       };
       const result = await usersCollection.updateOne(filter, updateDoc, options);
-      res.send(result)
+      res.send(result);
     })
 
     // Make admin user api
@@ -211,6 +211,7 @@ async function run() {
 
 
     /*==== Start Reviews Related APIs ====*/
+
     // Add Review API
     app.post('/review/add', verifyJWT, async (req, res) => {
       const review = req.body;
@@ -223,8 +224,9 @@ async function run() {
       const query = {};
       const cursor = reviewsCollection.find(query);
       const reviews = await cursor.toArray();
-      res.send(reviews);
+      res.send(reviews.reverse());
     })
+
     /*==== End Reviews Related APIs ====*/
 
     // Payment Intenet API
