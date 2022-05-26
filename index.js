@@ -191,6 +191,12 @@ async function run() {
       return res.send(orders);
     })
 
+    // all orders api
+    app.get('/orders', verifyJWT, async (req, res) => {
+      const orders = await ordersCollection.find().toArray();
+      res.send(orders);
+    })
+
     // Get single order information
     app.get('/order/:id', async (req, res,) => {
       const id = req.params.id;
@@ -212,6 +218,17 @@ async function run() {
       }
       const updatedOrder = await ordersCollection.updateOne(filter, updateDoc);
       const result = await paymentsCollection.insertOne(payment);
+      res.send(updateDoc);
+    })
+    // order status change api
+    app.patch('/order/status/:id', async (req, res) => {
+      const id = req.params.id;
+      const updateOrderStatus = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: updateOrderStatus
+      }
+      const updatedOrder = await ordersCollection.updateOne(filter, updateDoc);
       res.send(updateDoc);
     })
 
