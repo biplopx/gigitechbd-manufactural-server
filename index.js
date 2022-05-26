@@ -72,6 +72,7 @@ async function run() {
       const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '48h' })
       res.send({ result, token })
     });
+
     // user profile update api
     app.put('/user/update/:email', async (req, res) => {
       const email = req.params.email;
@@ -110,6 +111,16 @@ async function run() {
     app.get('/users', verifyJWT, async (req, res) => {
       const users = await usersCollection.find().toArray();
       res.send(users);
+    })
+
+    // single user api
+    app.get('/user/:email', async (req, res) => {
+      const email = req.params.email;
+      console.log(email)
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      console.log(user)
+      res.send(user);
     })
 
     /*==== End User Related APIs==== */
