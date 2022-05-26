@@ -30,7 +30,6 @@ function verifyJWT(req, res, next) {
 // verify admin
 const verifyAdmin = async (req, res, next) => {
   const requester = req.decoded.email;
-  console.log(requester)
   const requesterAccount = await usersCollection.findOne({ email: requester });
   if (requesterAccount.role === 'admin') {
     next();
@@ -114,10 +113,8 @@ async function run() {
     // single user api
     app.get('/user/:email', async (req, res) => {
       const email = req.params.email;
-      console.log(email)
       const query = { email: email }
       const user = await usersCollection.findOne(query);
-      console.log(user)
       res.send(user);
     })
 
@@ -137,7 +134,6 @@ async function run() {
     // Add Product api
     app.post('/product/add', verifyJWT, async (req, res) => {
       const product = req.body;
-      console.log(product)
       const result = await productsCollection.insertOne(product)
       res.send(result);
     })
