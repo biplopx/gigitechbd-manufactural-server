@@ -46,7 +46,6 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
   try {
     await client.connect();
-    console.log('DB Connected')
     // dabase name collection
     const productsCollection = client.db('gigitechbd').collection('products');
     const ordersCollection = client.db('gigitechbd').collection('orders');
@@ -236,7 +235,6 @@ async function run() {
       res.send(result);
     })
 
-
     /*==== End Product Related APIs ====*/
 
 
@@ -278,7 +276,6 @@ async function run() {
   }
 }
 run();
-
 
 
 // root route
