@@ -76,9 +76,7 @@ async function run() {
     // user profile update api
     app.put('/user/update/:email', async (req, res) => {
       const email = req.params.email;
-      console.log(email)
       const user = req.body;
-      console.log(user);
       const filter = { email: email };
       const options = { upsert: true };
       const updateDoc = {
@@ -143,6 +141,15 @@ async function run() {
       const result = await productsCollection.insertOne(product)
       res.send(result);
     })
+
+    // order cancel api
+    app.delete('/product/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(filter);
+      res.send(result);
+    })
+
 
     // Product Details api
     app.get('/product/:id', async (req, res) => {
@@ -228,7 +235,7 @@ async function run() {
       const review = req.body;
       const result = await reviewsCollection.insertOne(review)
       res.send(result);
-    })
+    });
 
     // Get Review API
     app.get('/reviews', async (req, res) => {
@@ -236,7 +243,7 @@ async function run() {
       const cursor = reviewsCollection.find(query);
       const reviews = await cursor.toArray();
       res.send(reviews.reverse());
-    })
+    });
 
     /*==== End Reviews Related APIs ====*/
 
