@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const cors = require('cors');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 const app = express();
@@ -52,6 +53,7 @@ async function run() {
     const ordersCollection = client.db('gigitechbd').collection('orders');
     const usersCollection = client.db('gigitechbd').collection('users');
     const reviewsCollection = client.db('gigitechbd').collection('reviews');
+    const paymentsCollection = client.db('gigitechbd').collection('payments');
 
 
     /*==== Start User Related APIs ====*/
@@ -69,6 +71,20 @@ async function run() {
       // sign a token in user
       const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '48h' })
       res.send({ result, token })
+    });
+    // user profile update api
+    app.put('/user/update/:email', async (req, res) => {
+      const email = req.params.email;
+      console.log(email)
+      const user = req.body;
+      console.log(user);
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result)
     })
 
     // Make admin user api
@@ -158,13 +174,38 @@ async function run() {
     })
 
     // Get single order information
-    // app.get('/order/:id', async (req, res,) => {
-    //   const id = req.params.id;
-    //   console.log(id)
-    //   const query = { _id: ObjectId(id.trim()) };
-    //   const order = await ordersCollection.findOne(query);
-    //   res.send(order);
-    // })
+    app.get('/order/:id', async (req, res,) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id.trim()) };
+      const order = await ordersCollection.findOne(query);
+      res.send(order);
+    })
+
+    // order payment update api
+    app.patch('/order/:id', async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId
+        }
+      }
+      const updatedOrder = await ordersCollection.updateOne(filter, updateDoc);
+      const result = await paymentsCollection.insertOne(payment);
+      res.send(updateDoc);
+    })
+
+    // order cancel api
+    app.delete('/order/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await ordersCollection.deleteOne(filter);
+      res.send(result);
+    })
+
+
 
     /*==== End Product Related APIs ====*/
 
@@ -186,6 +227,18 @@ async function run() {
     })
     /*==== End Reviews Related APIs ====*/
 
+    // Payment Intenet API
+    app.post('/create-payment-intent', async (req, res) => {
+      const order = req.body;
+      const price = order.price;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'BDT',
+        payment_method_types: ['card']
+      });
+      res.send({ clientSecret: paymentIntent.client_secret })
+    });
 
   }
   finally {
